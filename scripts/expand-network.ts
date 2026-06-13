@@ -12,25 +12,11 @@
  */
 
 import 'dotenv/config'
-import { getTeamRoster, getPlayerCareer } from './ep-client'
+import { getPlayer, getPlayerStats, getTeamPlayers, normalizeSeason, expandSeason } from './ep-client'
 import { upsertPlayer, upsertTeam, upsertStint, rebuildConnections, db } from './db-client'
-
-function normalizeSeason(slug: string): string {
-  const match = slug.match(/^(\d{4})-(\d{4})$/)
-  if (!match) return slug
-  return `${match[1]}-${match[2].slice(2)}`
-}
-
-function expandSeason(short: string): string {
-  const match = short.match(/^(\d{4})-(\d{2})$/)
-  if (!match) return short
-  const start = parseInt(match[1], 10)
-  return `${start}-${start + 1}`
-}
 
 async function importPlayerCareer(epId: number): Promise<string | null> {
   try {
-    const { getPlayer } = await import('./ep-client')
     const p = await getPlayer(epId)
     const fullName = `${p.firstName} ${p.lastName}`
     const dbPlayer = await upsertPlayer({
@@ -41,11 +27,12 @@ async function importPlayerCareer(epId: number): Promise<string | null> {
       birthdate:   p.dateOfBirth ?? null,
       image_url:   p.imageUrl ?? null,
     })
-    const career = await getPlayerCareer(epId)
+    const career = await getPlayerStats(epId)
     for (const stat of career) {
       if (!stat.team?.id) continue
-      const dbTeam = await upsertTeam({ ep_id: stat.team.id, name: stat.team.name, league: stat.team.league?.name ?? null, country: stat.team.country?.name ?? null })
-      await upsertStint({ player_id: dbPlayer.id, team_id: dbTeam.id, season: normalizeSeason(stat.season.slug), games: stat.regular?.gp ?? null, goals: stat.regular?.g ?? null, assists: stat.regular?.a ?? null, points: stat.regular?.tp ?? null })
+      const dbTeam = await upsertTeam({ ep_id: stat.team.id, name: stat.team.name, league: stat.league?.name ?? null, country: stat.team.country?.name ?? null })
+      const regular = stat.regular as Record<string, number> | undefined
+      await upsertStint({ player_id: dbPlayer.id, team_id: dbTeam.id, season: normalizeSeason(stat.season.slug), games: regular?.gp ?? null, goals: regular?.g ?? null, assists: regular?.a ?? null, points: regular?.tp ?? null })
     }
     return dbPlayer.id
   } catch (err) {
@@ -77,14 +64,15 @@ async function expandFromPlayer(dbPlayerId: string, depth: number) {
     processed.add(key)
 
     console.log(`\nExpanding roster: ${team.name} (${stint.season})...`)
+    void expandSeason(stint.season)  // kept for future use
     try {
-      const roster = await getTeamRoster(team.ep_id, expandSeason(stint.season))
-      console.log(`  ${roster.length} players on roster`)
+      const players = await getTeamPlayers(team.ep_id)
+      console.log(`  ${players.length} players on roster`)
 
-      for (const entry of roster) {
-        if (!entry.player?.id) continue
-        process.stdout.write(`  → ${entry.player.firstName} ${entry.player.lastName}`)
-        const id = await importPlayerCareer(entry.player.id)
+      for (const p of players) {
+        if (!p?.id) continue
+        process.stdout.write(`  → ${p.firstName} ${p.lastName}`)
+        const id = await importPlayerCareer(p.id)
         console.log(id ? ' ✓' : ' ✗')
 
         // Degree 2: recurse into each teammate's career (expensive — use sparingly)

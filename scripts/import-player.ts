@@ -10,7 +10,7 @@
  */
 
 import 'dotenv/config'
-import { searchPlayers, getPlayer, getPlayerCareer } from './ep-client'
+import { search, getPlayer, getPlayerStats, normalizeSeason } from './ep-client'
 import { upsertPlayer, upsertTeam, upsertStint, rebuildConnections, db } from './db-client'
 
 async function importPlayer(epId: number) {
@@ -29,7 +29,7 @@ async function importPlayer(epId: number) {
   })
   console.log(`  ✓ Player: ${dbPlayer.name} (${dbPlayer.id})`)
 
-  const career = await getPlayerCareer(epId)
+  const career = await getPlayerStats(epId)
   console.log(`  Found ${career.length} career stints`)
 
   for (const stat of career) {
@@ -39,34 +39,27 @@ async function importPlayer(epId: number) {
     const dbTeam = await upsertTeam({
       ep_id:   epTeamId,
       name:    stat.team.name,
-      league:  stat.team.league?.name ?? null,
+      league:  stat.league?.name ?? null,
       country: stat.team.country?.name ?? null,
     })
 
-    // EP uses "2018-2019", we normalize to "2018-19"
     const seasonNorm = normalizeSeason(stat.season.slug)
+    const regular = stat.regular as Record<string, number> | undefined
 
     await upsertStint({
       player_id: dbPlayer.id,
       team_id:   dbTeam.id,
       season:    seasonNorm,
-      games:     stat.regular?.gp ?? null,
-      goals:     stat.regular?.g  ?? null,
-      assists:   stat.regular?.a  ?? null,
-      points:    stat.regular?.tp ?? null,
+      games:     regular?.gp ?? null,
+      goals:     regular?.g  ?? null,
+      assists:   regular?.a  ?? null,
+      points:    regular?.tp ?? null,
     })
 
     console.log(`    → ${stat.team.name} (${seasonNorm})`)
   }
 
   return dbPlayer
-}
-
-function normalizeSeason(slug: string): string {
-  // "2018-2019" → "2018-19"
-  const match = slug.match(/^(\d{4})-(\d{4})$/)
-  if (!match) return slug
-  return `${match[1]}-${match[2].slice(2)}`
 }
 
 async function main() {
@@ -80,21 +73,16 @@ async function main() {
     if (!query) { console.error('--name requires a value'); process.exit(1) }
 
     console.log(`Searching EP for "${query}"...`)
-    const results = await searchPlayers(query)
-    if (results.length === 0) { console.error('No players found'); process.exit(1) }
+    const { players } = await search(query)
+    if (players.length === 0) { console.error('No players found'); process.exit(1) }
 
     console.log('\nMatches:')
-    results.forEach((p, i) => {
-      const name = (p as { fullName?: string; firstName?: string; lastName?: string }).fullName
-        ?? `${(p as { firstName?: string }).firstName ?? ''} ${(p as { lastName?: string }).lastName ?? ''}`.trim()
-      console.log(`  [${i}] ${name} (EP ID: ${p.id}) — ${p.position ?? 'unknown position'}`)
-    })
+    players.slice(0, 5).forEach((p, i) =>
+      console.log(`  [${i}] ${p.firstName} ${p.lastName} (EP ID: ${p.id}) — ${p.position ?? 'unknown position'}`)
+    )
 
-    // Auto-pick first result; for interactive use you'd prompt here
-    const pick = results[0]
-    const name = (pick as { fullName?: string }).fullName
-      ?? `${(pick as { firstName?: string }).firstName ?? ''} ${(pick as { lastName?: string }).lastName ?? ''}`.trim()
-    console.log(`\nAuto-selecting: ${name} (${pick.id})`)
+    const pick = players[0]
+    console.log(`\nAuto-selecting: ${pick.firstName} ${pick.lastName} (${pick.id})`)
     epId = pick.id
 
   } else if (args[0]) {

@@ -9,7 +9,9 @@
     "lint": "eslint",
     "import:player": "tsx --env-file=.env.local scripts/import-player.ts",
     "import:team": "tsx --env-file=.env.local scripts/import-team-season.ts",
+    "import:staff": "tsx --env-file=.env.local scripts/import-staff.ts",
     "import:csv": "tsx --env-file=.env.local scripts/import-csv.ts",
+    "import:bulk": "tsx --env-file=.env.local scripts/bulk-import.ts",
     "expand:network": "tsx --env-file=.env.local scripts/expand-network.ts"
   },
   "dependencies": {
