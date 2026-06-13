@@ -58,7 +58,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         <div
           className={`px-3.5 py-2.5 text-[14px] leading-relaxed ${
             isUser
-              ? 'bg-white text-[#07101f] font-medium rounded-lg rounded-br-sm'
+              ? 'bg-white text-black font-medium rounded-lg rounded-br-sm'
               : 'bg-white/[0.05] border border-white/[0.08] text-white/80 rounded-lg rounded-bl-sm'
           }`}
         >

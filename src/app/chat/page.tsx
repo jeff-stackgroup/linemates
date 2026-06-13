@@ -6,7 +6,7 @@ export const metadata = { title: 'Linemates' }
 
 export default function ChatPage() {
   return (
-    <div className="flex h-screen bg-[#07101f] overflow-hidden">
+    <div className="flex h-screen bg-black overflow-hidden">
 
       {/* Icon-only sidebar */}
       <aside className="w-14 flex-shrink-0 border-r border-white/[0.07] flex flex-col items-center pt-4 pb-4">
