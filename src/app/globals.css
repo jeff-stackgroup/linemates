@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617; /* slate-950 */
-  --foreground: #f1f5f9; /* slate-100 */
+  --background: #07101f;
+  --foreground: #f0f4f8;
 }
 
 @theme inline {
@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-barlow);
 }
 
 body {
@@ -18,6 +19,8 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
+.font-display {
+  font-family: var(--font-barlow), var(--font-geist-sans), Arial, sans-serif;
 }
+
+* { box-sizing: border-box; }

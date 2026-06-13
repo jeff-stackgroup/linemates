@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,8 +12,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+
 export const metadata: Metadata = {
-  title: "Linemates — Hockey Network Intelligence",
+  title: "Linemates",
   description: "Find your connection to anyone in professional hockey.",
 };
 
@@ -25,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

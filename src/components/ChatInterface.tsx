@@ -3,62 +3,39 @@
 import { useState, useRef, useEffect } from 'react'
 import type { ChatMessage, ConnectionPath } from '@/lib/types'
 import ConnectionPathCard from './ConnectionPath'
-import Logo from './Logo'
 
 const STARTERS = [
-  { icon: '🔗', text: 'How am I connected to Wayne Gretzky?' },
-  { icon: '🏒', text: 'Who did I play with that now works in NHL management?' },
-  { icon: '🛤️', text: 'Find the shortest path between me and Sidney Crosby' },
-  { icon: '🌍', text: 'Which of my former teammates played in the KHL?' },
+  'How am I connected to Wayne Gretzky?',
+  'Who did I play with that now works in NHL management?',
+  'Find the shortest path between me and Sidney Crosby',
+  'Which of my former teammates played in the KHL?',
 ]
-
-// Pull any connection paths out of the assistant message text
-function extractPaths(text: string): ConnectionPath[] {
-  // Paths are injected as JSON blocks in the message metadata
-  // For now return empty — the API will add them to metadata when implemented
-  return []
-}
-
-function ToolBadge({ name }: { name: string }) {
-  const labels: Record<string, string> = {
-    search_players:       'Searching players…',
-    find_connection_path: 'Finding path…',
-    get_career_teammates: 'Loading teammates…',
-    get_player_stints:    'Loading career…',
-  }
-  return (
-    <div className="flex items-center gap-1.5 text-xs text-blue-400/80">
-      <div className="w-3 h-3 border border-blue-400/60 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-      {labels[name] ?? `Running ${name}…`}
-    </div>
-  )
-}
 
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === 'user'
-  const paths  = msg.metadata?.paths ?? []
+  const paths  = (msg.metadata?.paths ?? []) as ConnectionPath[]
 
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-lg shadow-blue-600/30">
-          <Logo size={18} />
+        <div className="w-5 h-5 rounded-sm bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-1">
+          <span className="text-[9px] font-bold text-blue-400 font-mono">AI</span>
         </div>
       )}
-      <div className={`max-w-[78%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
+      <div className={`max-w-[80%] flex flex-col gap-2 ${isUser ? 'items-end' : 'items-start'}`}>
         <div
-          className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+          className={`px-3.5 py-2.5 text-[14px] leading-relaxed ${
             isUser
-              ? 'bg-blue-600 text-white rounded-br-sm shadow-lg shadow-blue-600/20'
-              : 'bg-slate-800/80 text-slate-100 rounded-bl-sm border border-slate-700/50'
+              ? 'bg-white text-[#07101f] font-medium rounded-lg rounded-br-sm'
+              : 'bg-white/[0.05] border border-white/[0.08] text-white/80 rounded-lg rounded-bl-sm'
           }`}
         >
           {msg.content || (
             <span className="flex gap-1 items-center h-4">
-              {[0, 150, 300].map(d => (
+              {[0, 120, 240].map(d => (
                 <span
                   key={d}
-                  className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"
+                  className="w-1 h-1 rounded-full bg-white/30 animate-bounce"
                   style={{ animationDelay: `${d}ms` }}
                 />
               ))}
@@ -93,9 +70,7 @@ export default function ChatInterface() {
     setMessages(next)
     setLoading(true)
     setToolsRunning([])
-
-    const assistantMsg: ChatMessage = { role: 'assistant', content: '' }
-    setMessages([...next, assistantMsg])
+    setMessages([...next, { role: 'assistant', content: '' }])
 
     try {
       const res = await fetch('/api/chat', {
@@ -103,7 +78,6 @@ export default function ChatInterface() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: next }),
       })
-
       const reader  = res.body!.getReader()
       const decoder = new TextDecoder()
       let accumulated = ''
@@ -111,31 +85,25 @@ export default function ChatInterface() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
-        const chunk = decoder.decode(value)
-        for (const line of chunk.split('\n')) {
+        for (const line of decoder.decode(value).split('\n')) {
           if (!line.startsWith('data: ')) continue
           const event = JSON.parse(line.slice(6))
-
-          if (event.type === 'tool_start') {
-            setToolsRunning(event.tools)
-          } else if (event.type === 'text') {
+          if (event.type === 'tool_start') setToolsRunning(event.tools)
+          else if (event.type === 'text') {
             accumulated += event.delta
             setMessages(prev => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: 'assistant', content: accumulated }
-              return updated
+              const u = [...prev]
+              u[u.length - 1] = { role: 'assistant', content: accumulated }
+              return u
             })
-          } else if (event.type === 'done') {
-            setToolsRunning([])
-          }
+          } else if (event.type === 'done') setToolsRunning([])
         }
       }
     } catch {
       setMessages(prev => {
-        const updated = [...prev]
-        updated[updated.length - 1] = { role: 'assistant', content: 'Something went wrong — please try again.' }
-        return updated
+        const u = [...prev]
+        u[u.length - 1] = { role: 'assistant', content: 'Something went wrong — please try again.' }
+        return u
       })
     } finally {
       setLoading(false)
@@ -144,34 +112,24 @@ export default function ChatInterface() {
     }
   }
 
-  function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
-  }
-
   return (
     <div className="flex flex-col h-full">
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto px-8 py-8 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-8 text-center max-w-lg mx-auto">
-            <div>
-              <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-600/30">
-                <Logo size={30} />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Who do you know?</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Ask me to find connection paths, surface former teammates, or discover hidden links in your hockey network.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+          <div className="h-full flex flex-col items-start justify-end pb-4 max-w-2xl">
+            <p className="text-[11px] font-mono text-white/20 uppercase tracking-widest mb-3">
+              Ask anything
+            </p>
+            <div className="flex flex-col gap-2 w-full">
               {STARTERS.map(s => (
                 <button
-                  key={s.text}
-                  onClick={() => send(s.text)}
-                  className="text-left px-4 py-3 rounded-xl border border-slate-700/60 bg-slate-800/40 hover:bg-slate-700/50 hover:border-blue-500/40 transition-all text-sm text-slate-300 hover:text-white group"
+                  key={s}
+                  onClick={() => send(s)}
+                  className="text-left text-[14px] text-white/40 hover:text-white/80 border-b border-white/[0.06] hover:border-white/20 py-2.5 transition-all"
                 >
-                  <span className="mr-2 group-hover:scale-110 inline-block transition-transform">{s.icon}</span>
-                  {s.text}
+                  {s}
                 </button>
               ))}
             </div>
@@ -181,8 +139,12 @@ export default function ChatInterface() {
         )}
 
         {toolsRunning.length > 0 && (
-          <div className="flex flex-col gap-1.5 pl-11">
-            {toolsRunning.map(t => <ToolBadge key={t} name={t} />)}
+          <div className="flex items-center gap-2 text-[11px] font-mono text-blue-400/60 pl-8">
+            <div className="w-2.5 h-2.5 border border-blue-400/40 border-t-transparent rounded-full animate-spin" />
+            {toolsRunning[0] === 'find_connection_path' ? 'Tracing path…'
+              : toolsRunning[0] === 'search_players' ? 'Looking up player…'
+              : toolsRunning[0] === 'get_career_teammates' ? 'Loading teammates…'
+              : 'Querying…'}
           </div>
         )}
 
@@ -190,30 +152,27 @@ export default function ChatInterface() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 px-6 py-4 border-t border-slate-800/60 bg-slate-900/40 backdrop-blur-sm">
-        <div className="flex items-end gap-3 max-w-3xl mx-auto">
+      <div className="flex-shrink-0 px-8 py-4 border-t border-white/[0.07]">
+        <div className="flex items-end gap-3 max-w-2xl">
           <textarea
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            placeholder="Ask about connections, former teammates, paths to anyone in hockey…"
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }}}
+            placeholder="Ask about your network…"
             rows={1}
             disabled={loading}
-            className="flex-1 resize-none bg-slate-800/60 border border-slate-700/60 focus:border-blue-500/70 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-colors disabled:opacity-50 min-h-[46px] max-h-32"
+            className="flex-1 resize-none bg-transparent border-b border-white/20 focus:border-white/50 py-2 text-[14px] text-white placeholder-white/20 focus:outline-none transition-colors disabled:opacity-40"
             style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
           <button
             onClick={() => send()}
             disabled={!input.trim() || loading}
-            className="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all hover:scale-105 shadow-lg shadow-blue-600/20 flex-shrink-0"
+            className="text-[11px] font-mono text-white/30 hover:text-white/70 disabled:opacity-20 transition-colors pb-2 uppercase tracking-widest"
           >
-            <svg className="w-4 h-4 text-white rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+            Send
           </button>
         </div>
-        <p className="text-center text-xs text-slate-700 mt-2">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   )
