@@ -157,7 +157,7 @@ export default function ChatInterface() {
                 className="font-display font-extrabold uppercase leading-none text-white"
                 style={{ fontSize: 'clamp(2.25rem, 4vw, 3.25rem)', letterSpacing: '-0.02em' }}
               >
-                Hi there, <span className="text-blue-400">Jeff.</span>
+                Hi there, <span className="text-amber-400">Jeff.</span>
               </h2>
               <p className="text-white/30 text-sm mt-2 font-mono">Who are you looking for?</p>
             </div>
