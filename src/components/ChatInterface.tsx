@@ -5,10 +5,42 @@ import type { ChatMessage, ConnectionPath } from '@/lib/types'
 import ConnectionPathCard from './ConnectionPath'
 
 const STARTERS = [
-  'How am I connected to Wayne Gretzky?',
-  'Who did I play with that now works in NHL management?',
-  'Find the shortest path between me and Sidney Crosby',
-  'Which of my former teammates played in the KHL?',
+  {
+    text: 'How am I connected to Wayne Gretzky?',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      </svg>
+    ),
+  },
+  {
+    text: 'Who did I play with that now works in NHL management?',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 00-1-1h-2a1 1 0 00-1 1v5m4 0H9" />
+      </svg>
+    ),
+  },
+  {
+    text: 'Find the shortest path between me and Sidney Crosby',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+  },
+  {
+    text: 'Which of my former teammates played in the KHL?',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
 ]
 
 function MessageBubble({ msg }: { msg: ChatMessage }) {
@@ -118,18 +150,34 @@ export default function ChatInterface() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-8 py-8 space-y-4">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-start justify-end pb-4 max-w-2xl">
-            <p className="text-[11px] font-mono text-white/20 uppercase tracking-widest mb-3">
-              Ask anything
-            </p>
-            <div className="flex flex-col gap-2 w-full">
+          <div className="h-full flex flex-col justify-center max-w-[600px]">
+            {/* Greeting */}
+            <div className="mb-8">
+              <h2
+                className="font-display font-extrabold uppercase leading-none text-white"
+                style={{ fontSize: 'clamp(2.25rem, 4vw, 3.25rem)', letterSpacing: '-0.02em' }}
+              >
+                Hi there, <span className="text-blue-400">Jeff.</span>
+              </h2>
+              <p className="text-white/30 text-sm mt-2 font-mono">Who are you looking for?</p>
+            </div>
+
+            {/* Prompt cards — 2×2 grid */}
+            <div className="grid grid-cols-2 gap-2.5">
               {STARTERS.map(s => (
                 <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="text-left text-[14px] text-white/40 hover:text-white/80 border-b border-white/[0.06] hover:border-white/20 py-2.5 transition-all"
+                  key={s.text}
+                  onClick={() => send(s.text)}
+                  className="flex flex-col justify-between p-4 border border-white/[0.08]
+                             hover:border-white/[0.18] hover:bg-white/[0.04]
+                             rounded-lg text-left transition-all group min-h-[100px]"
                 >
-                  {s}
+                  <p className="text-[13px] text-white/50 group-hover:text-white/80 leading-snug transition-colors">
+                    {s.text}
+                  </p>
+                  <div className="mt-3 text-white/20 group-hover:text-white/50 transition-colors">
+                    {s.icon}
+                  </div>
                 </button>
               ))}
             </div>
@@ -152,8 +200,8 @@ export default function ChatInterface() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 px-8 py-4 border-t border-white/[0.07]">
-        <div className="flex items-end gap-3 max-w-2xl">
+      <div className="flex-shrink-0 px-8 py-5 border-t border-white/[0.07]">
+        <div className="flex items-end gap-3 max-w-[600px]">
           <textarea
             ref={inputRef}
             value={input}
