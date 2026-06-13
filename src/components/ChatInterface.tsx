@@ -154,12 +154,12 @@ export default function ChatInterface() {
             {/* Greeting */}
             <div className="mb-8">
               <h2
-                className="font-display font-extrabold uppercase leading-none text-white"
-                style={{ fontSize: 'clamp(2.25rem, 4vw, 3.25rem)', letterSpacing: '-0.02em' }}
+                className="font-semibold tracking-tight leading-[1.06] text-white"
+                style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
               >
-                Hi there, <span className="text-amber-400">Jeff.</span>
+                Hi there, Jeff.
               </h2>
-              <p className="text-white/30 text-sm mt-2 font-mono">Who are you looking for?</p>
+              <p className="text-white/40 text-[1.0625rem] mt-2 leading-relaxed">Who are you looking for?</p>
             </div>
 
             {/* Prompt cards — 2×2 grid */}
